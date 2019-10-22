@@ -8,7 +8,7 @@ void setup() {
   Serial.begin(9600);
   ESP_BT.begin("ESP32_LED_Control");
   Serial.println("Bluetooth Device is Ready to Pair");
- 
+}
 void loop() {
  
   if (ESP_BT.available())
