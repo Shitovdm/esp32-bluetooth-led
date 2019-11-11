@@ -1172,7 +1172,7 @@ void PxMATRIX::flushDisplay(void) {
 
 void PxMATRIX::displayTestPattern(uint16_t show_time) {
 
-  if ((millis()-_test_last_call)>500)
+  if ((millis()-_test_last_call)>50)
   {
     flushDisplay();
     for (int ii=0;ii<=_test_pixel_counter;ii++)
