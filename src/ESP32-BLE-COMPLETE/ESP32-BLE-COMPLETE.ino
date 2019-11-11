@@ -38,7 +38,7 @@ portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 #define SCROLLING_SPEED_DEFAULT "40"
 #define BRIGHTNESS_DEFAULT "200"
 #define FONT_COLOR_DEFAULT "255,0,255"
-#define FONT_SIZE_DEFAULT "1"
+#define FONT_SIZE_DEFAULT "2"
 #define TEXT_DEFAULT "PENDING CONNECTION..."
 
 const String FIRMWARE_VERSION = "0.2";
@@ -70,7 +70,7 @@ uint8_t DISPLAY_DRAW_TIME = 10;
 uint32_t memcrc; 
 uint8_t *p_memcrc = (uint8_t*)&memcrc;
 int xpos = 0;
-int ypos = 0;
+int ypos = 3;
 int incoming;
 String message_text = "";
 String backup_message_text = "";
@@ -501,6 +501,37 @@ bool execute_control_command(String command, String value)
         Serial.println("Transferring device information to client");
         return true;
     }
+
+    if(command.equals("get-info-full"))
+    {
+        String str_text((char*)eeprom_data.text);
+        String str_speed((char*)eeprom_data.scrollingSpeed);
+        String str_brightness((char*)eeprom_data.brightness);
+        String str_font_color((char*)eeprom_data.fontColor);
+        String str_font_size((char*)eeprom_data.fontSize);
+        bool bool_flip((char*)eeprom_data.flip);
+        
+        String info = "#_get-text=" + str_text + ";\n";
+        info += "#_get-speed=" + str_speed + ";\n";
+        info += "#_get-brightness=" + str_brightness + ";\n";
+        info += "#_get-color=" + str_font_color + ";\n";
+        info += "#_get-size=" + str_font_size + ";\n";
+
+        String flip = "";
+        if(bool_flip)
+        {
+          flip = "true";
+        } else {
+          flip = "false";
+        }
+        info += "#_get-flip=" + flip + ";";
+        
+        sendBleMessage(info);
+        Serial.println("Transferring device full information to client");
+
+        is_setting_change = true;
+        return true;
+    }
     
     if(command.equals("reboot"))
     {
@@ -609,7 +640,7 @@ void setupDisplay(bool is_enable)
     display.begin(5);
     display.setScanPattern(ZAGGIZ); // LINE, ZIGZAG, ZAGGIZ, WZAGZIG, VZAG
     display.setMuxPattern(BINARY);  // BINARY, STRAIGHT
-    //display.setMuxDelay(0,1,0,0,0);
+    //display.setMuxDelay(50,50,50,0,0);
     display.setPanelsWidth(1);
     display.setRotate(eeprom_data.rotate);
     display.setFlip(eeprom_data.flip);

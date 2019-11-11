@@ -38,11 +38,11 @@ portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
 const String FIRMWARE_VERSION = "0.2";
 const String HARDWARE = "DOIT ESP32 DEVKIT V1";
-const String LED_TYPE = "P8 40X20 RGB";
-const String LED_SERIAL = "P8-4020-2727-5S";
+const String LED_TYPE = "P8 32X16 RGB";
+const String LED_SERIAL = "P10-1R-V706";
 const String LED_INFO = "40X20,ABC,1/5,ZAGGIZ,BINARY";
 
-const String BLUETOOTH_SSID = "LED Matrix 0.1";
+const String BLUETOOTH_SSID = "RED LED Matrix 0.1";
 uint8_t DISPLAY_DRAW_TIME = 10;
 
 static prog_uint32_t crc_table[16] = {
