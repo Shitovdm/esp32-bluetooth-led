@@ -640,7 +640,7 @@ void setupDisplay(bool is_enable)
     display.begin(5);
     display.setScanPattern(ZAGGIZ); // LINE, ZIGZAG, ZAGGIZ, WZAGZIG, VZAG
     display.setMuxPattern(BINARY);  // BINARY, STRAIGHT
-    //display.setMuxDelay(50,50,50,0,0);
+    display.setMuxDelay(1,1,1,0,0);
     display.setPanelsWidth(1);
     display.setRotate(eeprom_data.rotate);
     display.setFlip(eeprom_data.flip);

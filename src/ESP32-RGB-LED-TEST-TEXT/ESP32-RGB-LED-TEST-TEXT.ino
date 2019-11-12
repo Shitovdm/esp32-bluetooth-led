@@ -89,21 +89,14 @@ void display_update_enable(bool is_enable)
 
 void setup() {
 
- Serial.begin(9600);
-  // Define your display layout here, e.g. 1/8 step, and optional SPI pins begin(row_pattern, CLK, MOSI, MISO, SS)
+  Serial.begin(9600);
   display.begin(5);
-
-  // Define multiplex implemention here {BINARY, STRAIGHT} (default is BINARY)
   display.setMuxPattern(BINARY);
-
-  // Set the multiplex pattern {LINE, ZIGZAG,ZZAGG, ZAGGIZ, WZAGZIG, VZAG, ZAGZIG} (default is LINE)
   display.setScanPattern(ZAGGIZ);
   display.setColorOffset(0, 0, 0);
-  // Set the color order {RRGGBB, RRBBGG, GGRRBB, GGBBRR, BBRRGG, BBGGRR} (default is RRGGBB)
-  //display.setColorOrder(RRGGBB);
   display.setMuxDelay(1,1,1,0,0);
   display.setPanelsWidth(1);
-  display.setBrightness(150);
+  display.setBrightness(120);
 
   //display.setFastUpdate(true);
   display.clearDisplay();
@@ -136,10 +129,6 @@ void scroll_text(uint8_t ypos, unsigned long scroll_delay, String text, uint8_t 
       display.println(text);
       delay(scroll_delay);
       yield();
-
-      // This might smooth the transition a bit if we go slow
-      
-
       delay(scroll_delay/5);
       yield();
 
@@ -147,24 +136,9 @@ void scroll_text(uint8_t ypos, unsigned long scroll_delay, String text, uint8_t 
 }
 
 void loop() {
-  //display.drawRoundRect(0, 0, 4, 4, 4, display.color565(0, 255, 0));
-  //display.drawRect(0, 0, 10, 20, display.color565(0, 255, 0));
-  //display.drawRect(30, 0, 10, 20, display.color565(255, 255, 0));
-  //display.fillRect(0, 0, 40, 6, display.color565(255, 255, 255));
-  //display.fillRect(0, 7, 40, 7, display.color565(0, 0, 255));
-  display.fillRect(0, 13, 40, 6, display.color565(255, 0, 0));
-  display.fillRect(0, 19, 40, 1, display.color565(0, 0, 255));
-  /*display.drawPixel(5,1,display.color565(255, 255, 0));
-  display.drawPixel(5,2,display.color565(255, 255, 0));
-  display.drawPixel(5,3,display.color565(255, 255, 0));
-  display.drawPixel(5,4,display.color565(255, 255, 0));
-  display.drawPixel(5,5,display.color565(255, 255, 0));
-  display.drawPixel(5,6,display.color565(255, 255, 0));
-  display.drawPixel(5,7,display.color565(255, 255, 0));*/
-  //delay(100);
-  
-  //display.println("TEST");
-  //display.setTextSize(2);
-  //scroll_text(3,30,"TEST",0, 255, 0);
-  //display.clearDisplay();
+  display.setTextSize(2);
+  display.setCursor(10,3);
+  display.println("HI");
+  //display.fillRect(0, 5, 40, 5, display.color565(255, 0, 0));
+  //display.fillRect(0, 15, 40, 5, display.color565(0, 0, 255));
 }
