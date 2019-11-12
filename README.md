@@ -20,8 +20,35 @@
 **set-rotate** | 1 | **#\_set-rotate=1** |  Установка поворота текста 
 **get-rotate** | - | **#\_get-rotate** | Получение текущего значения поворота текста  
 **set-ypos** | 0 | **#\_set-ypos=0** | Установка положения текста по OY 
+**get-info-full** | - | **#\_get-info-full** | Получение всех конфигов из памяти устройства
 **get-info** | - | **#\_get-rotate** | Получение информации об устройстве  
 **reboot** | - | **#\_reboot=1** | Перезагрузка устройства  
 **reset** | - | **#\_reset=1** | Сброс устройства с перезагрузкой  
 **erase** | - | **#\_erase=1** | Очистка памяти устройства  
 
+
+## Assembly and wiring
+
+![P10_conn_A](/images/40x20_con_R1.jpg)
+
+  Connect PI and PO as follows:
+
+  PI | PO
+  ---|---
+  R2 | R1
+  G1 | R2
+  G2 | G1
+  B1 | G2
+  B2 | B1
+
+  Connect panel input (PI) to the ESP32 as follows:
+
+  PI  | ESP32
+  ----|----
+  STB/LAT |  22
+  A   |  19
+  B   |  23
+  C   |  18
+  P_OE|  2
+  CLK |  14
+  R1  |  13
