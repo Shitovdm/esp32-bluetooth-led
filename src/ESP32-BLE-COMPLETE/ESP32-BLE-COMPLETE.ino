@@ -276,8 +276,7 @@ void scroll_text(uint8_t ylpos, unsigned long scroll_delay, String text)
     display.setTextWrap(false);  // we don't wrap text so it scrolls nicely
     display.setRotation(0);
     
-      
-    for (int xpos = MATRIX_WIDTH; xpos > -(MATRIX_WIDTH + text_length*5); xpos--)
+    for (int xpos = MATRIX_WIDTH; xpos > -(MATRIX_WIDTH + text_length*7); xpos--)
     {
         if(is_setting_change)
         {
@@ -286,17 +285,48 @@ void scroll_text(uint8_t ylpos, unsigned long scroll_delay, String text)
         }
         display.clearDisplay();
         display.setCursor(xpos,ylpos);
-        display.println(text);
+        display.println(utf8rus(text));
         delay(scroll_delay);
         yield();
-  
-        // This might smooth the transition a bit if we go slow
+
         display.setCursor(xpos-1,ylpos);
-        display.println(text);
-  
+        display.println(utf8rus(text));
         delay(scroll_delay/5);
         yield();
     }
+}
+
+String utf8rus(String source)
+{
+  int i,k;
+  String target;
+  unsigned char n;
+  char m[2] = { '0', '\0' };
+
+  k = source.length(); i = 0;
+
+  while (i < k) {
+    n = source[i]; i++;
+
+    if (n >= 0xBF){
+      switch (n) {
+        case 0xD0: {
+          n = source[i]; i++;
+          if (n == 0x81) { n = 0xA8; break; }
+          if (n >= 0x90 && n <= 0xBF) n = n + 0x2F;
+          break;
+        }
+        case 0xD1: {
+          n = source[i]; i++;
+          if (n == 0x91) { n = 0xB7; break; }
+          if (n >= 0x80 && n <= 0x8F) n = n + 0x6F;
+          break;
+        }
+      }
+    }
+    m[0] = n; target = target + String(m);
+  }
+  return target;
 }
 
 bool execute_control_command(String command, String value)
@@ -662,6 +692,18 @@ void setupDisplay(bool is_enable)
   }
 }
 
+
+void startScreen()
+{
+    display.drawRect(0, 0, 40, 20, display.color565(255, 0, 0));
+    display.drawRect(2, 2, 36, 16, display.color565(0, 255, 0));
+    display.drawRect(4, 4, 32, 12, display.color565(0, 0, 255));
+    display.setTextSize(1);
+    display.setCursor(12,7);
+    display.println("LED");
+    display.setTextSize(atoi(eeprom_data.fontSize));
+}
+
 void setup() 
 {
     setupSerial(true);
@@ -671,8 +713,10 @@ void setup()
     setupBluetooth(true);
     
     setupDisplay(true);
+
+    startScreen();
     
-    delay(200);
+    delay(1500);
 }
 union single_double{
   uint8_t two[2];
