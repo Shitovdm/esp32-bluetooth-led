@@ -773,7 +773,7 @@ void setup()
 
     startScreen();
     
-    delay(150000);
+    delay(1000);
 }
 union single_double{
   uint8_t two[2];
