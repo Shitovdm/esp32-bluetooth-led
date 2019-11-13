@@ -1,9 +1,3 @@
-/**
- * 
- * 
- * 
- */
-
 #include <string>
 #include <EEPROM.h>
 #include <PxMatrix.h>
@@ -12,7 +6,6 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
-#ifdef ESP32
 #define P_LAT 22
 #define P_A 19
 #define P_B 23
@@ -22,11 +15,10 @@
 #define P_OE 2
 hw_timer_t * timer = NULL;
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
-#endif
-
 
 #define LENGTH(x) (strlen(x) + 1)
-#define MATRIX_WIDTH 40
+#define PANELS_COUNT 1
+#define MATRIX_WIDTH 40*PANELS_COUNT
 #define MATRIX_HEIGHT 20
 #define EEPROM_START 0
 #define SERIAL_BAUD_RATE 115200
@@ -48,9 +40,6 @@ const String LED_SERIAL = "P8-4020-2727-5S";
 const String LED_INFO = "40X20,ABC,1/5,ZAGGIZ,BINARY";
 const String BLUETOOTH_SSID = "LED Matrix 0.2";
 
-
-
-
 static prog_uint32_t crc_table[16] = {
   0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
   0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
@@ -61,16 +50,19 @@ struct eeprom_data_t {
   bool flip;
   char brightness[8];
   char scrollingSpeed[8];
-  char text[128];
+  char text[512];
   char fontColor[16];
   char fontSize[4];
 } eeprom_data;
 
-uint8_t DISPLAY_DRAW_TIME = 10;
+uint8_t DISPLAY_DRAW_TIME = 50;
 uint32_t memcrc; 
 uint8_t *p_memcrc = (uint8_t*)&memcrc;
 int xpos = 0;
 int ypos = 3;
+uint8_t r_color = 255;
+uint8_t g_color = 0;
+uint8_t b_color = 255;
 int incoming;
 String message_text = "";
 String backup_message_text = "";
@@ -283,12 +275,14 @@ void scroll_text(uint8_t ylpos, unsigned long scroll_delay, String text)
             is_setting_change = false; 
             return;
         }
+        display.setTextColor(display.color565(r_color,g_color,b_color));
         display.clearDisplay();
         display.setCursor(xpos,ylpos);
         display.println(utf8rus(text));
         delay(scroll_delay);
         yield();
 
+        display.setTextColor(display.color565(r_color/4,g_color/4,b_color/4));  
         display.setCursor(xpos-1,ylpos);
         display.println(utf8rus(text));
         delay(scroll_delay/5);
@@ -345,7 +339,6 @@ bool execute_control_command(String command, String value)
     {
         String str_text((char*)eeprom_data.text);
         Serial.println("Transferring current text: '" + str_text + "' to client");
-        //ESP_BT.println(str_text);
         sendBleMessage(str_text);
         return true;
     }
@@ -366,7 +359,6 @@ bool execute_control_command(String command, String value)
     {
         String str_fontSize((char*)eeprom_data.fontSize);
         Serial.println("Transferring current font size: '" + str_fontSize + "' to client");
-        //ESP_BT.println(str_fontSize);
         sendBleMessage(str_fontSize);
         return true;
     }
@@ -374,9 +366,12 @@ bool execute_control_command(String command, String value)
     if(command.equals("set-color"))
     {
         uint8_t r = value.substring(0, value.indexOf(",")).toInt();
+        r_color = r;
         String tmp_value = value.substring(value.indexOf(",") + 1, value.length());
         uint8_t g = tmp_value.substring(0, tmp_value.indexOf(",")).toInt();
+        g_color = g;
         uint8_t b = tmp_value.substring(tmp_value.indexOf(",") + 1, tmp_value.length()).toInt();
+        b_color = b;
         if( (r >=0 && r <= 255) && (g >=0 && g <= 255) && (b >=0 && b <= 255) )
         {
             strcpy(eeprom_data.fontColor, value.c_str());
@@ -565,29 +560,33 @@ bool execute_control_command(String command, String value)
     
     if(command.equals("reboot"))
     {
+        ESP.restart();
         if(value.equals("1"))
         {
-            ESP.restart(); 
+            
         }
         return true;
     } 
     if(command.equals("reset"))
     {
+        erase_eeprom();
+        ESP.restart();
         if(value.equals("1"))
         {
-            erase_eeprom();
-            ESP.restart();
+            
         }
         return true;
     } 
-    if(command.equals("erase"))
+    /*if(command.equals("erase"))
     {
+        erase_eeprom();
+        ESP.restart();
         if(value.equals("1"))
         {
-            erase_eeprom();
+            
         }
         return true;
-    } 
+    } */
 }
 
 void setupSerial(bool is_enable)
@@ -670,19 +669,22 @@ void setupDisplay(bool is_enable)
     display.begin(5);
     display.setScanPattern(ZAGGIZ); // LINE, ZIGZAG, ZAGGIZ, WZAGZIG, VZAG
     display.setMuxPattern(BINARY);  // BINARY, STRAIGHT
-    display.setMuxDelay(1,1,1,0,0);
-    display.setPanelsWidth(1);
+    //display.setMuxDelay(1,1,1,0,0);
+    display.setPanelsWidth(PANELS_COUNT);
     display.setRotate(eeprom_data.rotate);
     display.setFlip(eeprom_data.flip);
-    display.setFastUpdate(true);
+    //display.setFastUpdate(true);
     display.setColorOffset(0, 0, 0);
     display.flushDisplay();
 
     String str_font_color((char*)eeprom_data.fontColor);
     uint8_t r = str_font_color.substring(0, str_font_color.indexOf(",")).toInt();
+    r_color = r;
     String tmp_value = str_font_color.substring(str_font_color.indexOf(",") + 1, str_font_color.length());
     uint8_t g = tmp_value.substring(0, tmp_value.indexOf(",")).toInt();
-    uint8_t b = tmp_value.substring(tmp_value.indexOf(",") + 1, tmp_value.length()).toInt();    
+    g_color = g;
+    uint8_t b = tmp_value.substring(tmp_value.indexOf(",") + 1, tmp_value.length()).toInt(); 
+    b_color = b;   
     display.setTextColor(display.color565(r, g, b));
     display.setTextSize(atoi(eeprom_data.fontSize));
     display.setBrightness(atoi(eeprom_data.brightness));
@@ -692,16 +694,71 @@ void setupDisplay(bool is_enable)
   }
 }
 
+uint16_t myWHITE = display.color565(255, 255, 255);
+uint16_t myGREEN = display.color565(0, 255, 0);
+
+int8_t static apple_icon[MATRIX_WIDTH][MATRIX_HEIGHT]={
+  {9,10,11}, 
+  {7,8,9,10,11,12,13}, 
+  {6,7,8,9,10,11,12,13,14}, 
+  {5,6,7,8,9,10,11,12,13,14,15},
+  {5,6,7,8,9,10,11,12,13,14,15,16},
+  {5,6,7,8,9,10,11,12,13,14,15,16},
+  {6,7,8,9,10,11,12,13,14,15},
+  {3,4,6,7,8,9,10,11,12,13,14,15},
+  {2,3,6,7,8,9,10,11,12,13,14,15,16},
+  {5,6,7,8,9,10,11,12,13,14,15,16},
+  {5,6,7,8,9,10,11,12,13,14,15},
+  {5,6,7,11,12,13,14},
+  {6,12,13}
+};
+
+int8_t static android_icon[MATRIX_WIDTH][MATRIX_HEIGHT]={
+  {7,8,9,10,11},
+  {7,8,9,10,11},
+  {},
+  {5,7,8,9,10,11,12,13},
+  {1,4,5,7,8,9,10,11,12,13,14},
+  {2,3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {3,4,5,7,8,9,10,11,12,13,14},
+  {3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {2,3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {1,4,5,7,8,9,10,11,12,13,14},
+  {5,7,8,9,10,11,12,13},
+  {},
+  {7,8,9,10,11},
+  {7,8,9,10,11}
+};
+
+void drawImage(int8_t image[MATRIX_WIDTH][MATRIX_HEIGHT], uint16_t offsetOX, uint16_t color)
+{
+    for (int xx = 0; xx < MATRIX_WIDTH; xx++)
+    {
+        for (int yy = 0; yy < MATRIX_HEIGHT; yy++)
+        {
+            if (image[xx][yy])
+            {
+                display.drawPixel(offsetOX + xx, image[xx][yy], color);
+            }
+        }
+    }
+}
+
 
 void startScreen()
 {
-    display.drawRect(0, 0, 40, 20, display.color565(255, 0, 0));
-    display.drawRect(2, 2, 36, 16, display.color565(0, 255, 0));
-    display.drawRect(4, 4, 32, 12, display.color565(0, 0, 255));
+    display.drawRect(0, 0, MATRIX_WIDTH, MATRIX_HEIGHT, display.color565(255, 0, 0));
+    display.drawRect(2, 2, MATRIX_WIDTH-4, MATRIX_HEIGHT-4, display.color565(0, 255, 0));
+    display.drawRect(4, 4, MATRIX_WIDTH-8, MATRIX_HEIGHT-8, display.color565(0, 0, 255));
     display.setTextSize(1);
-    display.setCursor(12,7);
+    display.setCursor((MATRIX_WIDTH/2)-8,(MATRIX_HEIGHT/2)-3);
     display.println("LED");
     display.setTextSize(atoi(eeprom_data.fontSize));
+
+    //drawImage(apple_icon, 3, myWHITE);
+    //drawImage(android_icon, 22, myGREEN);
+    
 }
 
 void setup() 
@@ -716,7 +773,7 @@ void setup()
 
     startScreen();
     
-    delay(1500);
+    delay(150000);
 }
 union single_double{
   uint8_t two[2];
