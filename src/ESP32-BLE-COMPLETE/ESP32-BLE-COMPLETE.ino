@@ -17,7 +17,7 @@ hw_timer_t * timer = NULL;
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
 #define LENGTH(x) (strlen(x) + 1)
-#define PANELS_COUNT 1
+#define PANELS_COUNT 2
 #define MATRIX_WIDTH 40*PANELS_COUNT
 #define MATRIX_HEIGHT 20
 #define EEPROM_START 0
@@ -55,7 +55,7 @@ struct eeprom_data_t {
   char fontSize[4];
 } eeprom_data;
 
-uint8_t DISPLAY_DRAW_TIME = 50;
+uint8_t DISPLAY_DRAW_TIME = 70;
 uint32_t memcrc; 
 uint8_t *p_memcrc = (uint8_t*)&memcrc;
 int xpos = 0;
@@ -63,6 +63,7 @@ int ypos = 3;
 uint8_t r_color = 255;
 uint8_t g_color = 0;
 uint8_t b_color = 255;
+uint16_t text_length = 0;
 int incoming;
 String message_text = "";
 String backup_message_text = "";
@@ -262,32 +263,129 @@ unsigned long crc_byte(byte *b, int len)
     return crc;
 }
 
+int8_t static apple_icon[MATRIX_WIDTH][MATRIX_HEIGHT]={
+  {9,10,11}, 
+  {7,8,9,10,11,12,13}, 
+  {6,7,8,9,10,11,12,13,14}, 
+  {5,6,7,8,9,10,11,12,13,14,15},
+  {5,6,7,8,9,10,11,12,13,14,15,16},
+  {5,6,7,8,9,10,11,12,13,14,15,16},
+  {6,7,8,9,10,11,12,13,14,15},
+  {3,4,6,7,8,9,10,11,12,13,14,15},
+  {2,3,6,7,8,9,10,11,12,13,14,15,16},
+  {5,6,7,8,9,10,11,12,13,14,15,16},
+  {5,6,7,8,9,10,11,12,13,14,15},
+  {5,6,7,11,12,13,14},
+  {6,12,13}
+};
+
+int8_t static android_icon[MATRIX_WIDTH][MATRIX_HEIGHT]={
+  {7,8,9,10,11},
+  {7,8,9,10,11},
+  {},
+  {5,7,8,9,10,11,12,13},
+  {1,4,5,7,8,9,10,11,12,13,14},
+  {2,3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {3,4,5,7,8,9,10,11,12,13,14},
+  {3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {2,3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {1,4,5,7,8,9,10,11,12,13,14},
+  {5,7,8,9,10,11,12,13},
+  {},
+  {7,8,9,10,11},
+  {7,8,9,10,11}
+};
+
+
+int8_t static smile1_icon[MATRIX_WIDTH][MATRIX_HEIGHT]={
+  {7,8,9,10,11},
+  {7,8,9,10,11},
+  {},
+  {5,7,8,9,10,11,12,13},
+  {1,4,5,7,8,9,10,11,12,13,14},
+  {2,3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {3,4,5,7,8,9,10,11,12,13,14},
+  {3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {2,3,4,5,7,8,9,10,11,12,13,14,15,16,17},
+  {1,4,5,7,8,9,10,11,12,13,14},
+  {5,7,8,9,10,11,12,13},
+  {},
+  {7,8,9,10,11},
+  {7,8,9,10,11}
+};
+
+void drawImage(int8_t image[MATRIX_WIDTH][MATRIX_HEIGHT], uint16_t offsetOX, uint16_t color)
+{
+    for (int xx = 0; xx < MATRIX_WIDTH; xx++)
+    {
+        for (int yy = 0; yy < MATRIX_HEIGHT; yy++)
+        {
+            if (image[xx][yy])
+            {
+                display.drawPixel(offsetOX + xx, image[xx][yy], color);
+            }
+        }
+    }
+}
+
 void scroll_text(uint8_t ylpos, unsigned long scroll_delay, String text)
 {
-    uint16_t text_length = text.length();
     display.setTextWrap(false);  // we don't wrap text so it scrolls nicely
     display.setRotation(0);
-    
+
+    //char text_char_array[text_length];
+    //strcpy(text_char_array, text.c_str());
     for (int xpos = MATRIX_WIDTH; xpos > -(MATRIX_WIDTH + text_length*7); xpos--)
     {
         if(is_setting_change)
         {
-            is_setting_change = false; 
+            is_setting_change = false;
+            display.clearDisplay();
             return;
         }
-        display.setTextColor(display.color565(r_color,g_color,b_color));
         display.clearDisplay();
         display.setCursor(xpos,ylpos);
         display.println(utf8rus(text));
+        //display.println("TEST1  ");
+        
+        //display.println("  TEST2");
+        //display.println(utf8rus(String(text_char_array[2])));
+         //Serial.println("cha: r" + String(text_char_array[2]));
+        
+        
+
+        // drawImage(android_icon, xpos, display.color565(0, 255, 0));
+        
+        
         delay(scroll_delay);
         yield();
 
-        display.setTextColor(display.color565(r_color/4,g_color/4,b_color/4));  
+        /*display.setTextColor(display.color565(r_color/4,g_color/4,b_color/4));  
         display.setCursor(xpos-1,ylpos);
         display.println(utf8rus(text));
-        delay(scroll_delay/5);
-        yield();
+        delay(1);
+        yield();*/
+
+        
     }
+
+    
+    
+}
+
+void static_text(uint8_t ylpos, String text)
+{
+    if(is_setting_change)
+        {
+            is_setting_change = false;
+            display.clearDisplay();
+            return;
+        }
+    //zdisplay.clearDisplay();
+    display.setCursor(2,ylpos);
+    display.println(utf8rus(text));
 }
 
 String utf8rus(String source)
@@ -330,6 +428,8 @@ bool execute_control_command(String command, String value)
         message_text = value;
         if(!message_text.equals(eeprom_data.text))
         {
+            display.clearDisplay();
+            text_length = utf8rus(message_text).length();  //  Задаем длину текста, чтобы не 
             strcpy(eeprom_data.text, value.c_str());
             write_settings_to_eeprom();
         }
@@ -669,7 +769,7 @@ void setupDisplay(bool is_enable)
     display.begin(5);
     display.setScanPattern(ZAGGIZ); // LINE, ZIGZAG, ZAGGIZ, WZAGZIG, VZAG
     display.setMuxPattern(BINARY);  // BINARY, STRAIGHT
-    //display.setMuxDelay(1,1,1,0,0);
+    display.setMuxDelay(1,1,1,0,0);
     display.setPanelsWidth(PANELS_COUNT);
     display.setRotate(eeprom_data.rotate);
     display.setFlip(eeprom_data.flip);
@@ -694,70 +794,29 @@ void setupDisplay(bool is_enable)
   }
 }
 
-uint16_t myWHITE = display.color565(255, 255, 255);
-uint16_t myGREEN = display.color565(0, 255, 0);
-
-int8_t static apple_icon[MATRIX_WIDTH][MATRIX_HEIGHT]={
-  {9,10,11}, 
-  {7,8,9,10,11,12,13}, 
-  {6,7,8,9,10,11,12,13,14}, 
-  {5,6,7,8,9,10,11,12,13,14,15},
-  {5,6,7,8,9,10,11,12,13,14,15,16},
-  {5,6,7,8,9,10,11,12,13,14,15,16},
-  {6,7,8,9,10,11,12,13,14,15},
-  {3,4,6,7,8,9,10,11,12,13,14,15},
-  {2,3,6,7,8,9,10,11,12,13,14,15,16},
-  {5,6,7,8,9,10,11,12,13,14,15,16},
-  {5,6,7,8,9,10,11,12,13,14,15},
-  {5,6,7,11,12,13,14},
-  {6,12,13}
-};
-
-int8_t static android_icon[MATRIX_WIDTH][MATRIX_HEIGHT]={
-  {7,8,9,10,11},
-  {7,8,9,10,11},
-  {},
-  {5,7,8,9,10,11,12,13},
-  {1,4,5,7,8,9,10,11,12,13,14},
-  {2,3,4,5,7,8,9,10,11,12,13,14,15,16,17},
-  {3,4,5,7,8,9,10,11,12,13,14,15,16,17},
-  {3,4,5,7,8,9,10,11,12,13,14},
-  {3,4,5,7,8,9,10,11,12,13,14,15,16,17},
-  {2,3,4,5,7,8,9,10,11,12,13,14,15,16,17},
-  {1,4,5,7,8,9,10,11,12,13,14},
-  {5,7,8,9,10,11,12,13},
-  {},
-  {7,8,9,10,11},
-  {7,8,9,10,11}
-};
-
-void drawImage(int8_t image[MATRIX_WIDTH][MATRIX_HEIGHT], uint16_t offsetOX, uint16_t color)
-{
-    for (int xx = 0; xx < MATRIX_WIDTH; xx++)
-    {
-        for (int yy = 0; yy < MATRIX_HEIGHT; yy++)
-        {
-            if (image[xx][yy])
-            {
-                display.drawPixel(offsetOX + xx, image[xx][yy], color);
-            }
-        }
-    }
-}
-
 
 void startScreen()
 {
-    display.drawRect(0, 0, MATRIX_WIDTH, MATRIX_HEIGHT, display.color565(255, 0, 0));
-    display.drawRect(2, 2, MATRIX_WIDTH-4, MATRIX_HEIGHT-4, display.color565(0, 255, 0));
-    display.drawRect(4, 4, MATRIX_WIDTH-8, MATRIX_HEIGHT-8, display.color565(0, 0, 255));
+    //display.fillRect(0, 0, MATRIX_WIDTH-0, MATRIX_HEIGHT-0, display.color565(255, 255, 255));
+  
+    display.drawRect(0, 0, MATRIX_WIDTH, MATRIX_HEIGHT, display.color565(255, 255, 255));
     display.setTextSize(1);
+    display.setTextColor(display.color565(255,255,255));
     display.setCursor((MATRIX_WIDTH/2)-8,(MATRIX_HEIGHT/2)-3);
     display.println("LED");
     display.setTextSize(atoi(eeprom_data.fontSize));
+    String str_font_color((char*)eeprom_data.fontColor);
+    uint8_t r = str_font_color.substring(0, str_font_color.indexOf(",")).toInt();
+    r_color = r;
+    String tmp_value = str_font_color.substring(str_font_color.indexOf(",") + 1, str_font_color.length());
+    uint8_t g = tmp_value.substring(0, tmp_value.indexOf(",")).toInt();
+    g_color = g;
+    uint8_t b = tmp_value.substring(tmp_value.indexOf(",") + 1, tmp_value.length()).toInt(); 
+    b_color = b;   
+    display.setTextColor(display.color565(r, g, b));
 
-    //drawImage(apple_icon, 3, myWHITE);
-    //drawImage(android_icon, 22, myGREEN);
+    drawImage(apple_icon, 13, display.color565(255, 255, 255));
+    drawImage(android_icon, 52, display.color565(0, 255, 0));
     
 }
 
@@ -773,7 +832,8 @@ void setup()
 
     startScreen();
     
-    delay(1000);
+    delay(1500);
+    display.clearDisplay();
 }
 union single_double{
   uint8_t two[2];
@@ -807,9 +867,31 @@ void loop()
     //  Display message.
     if (is_isset_message)
     {
-        scroll_text(ypos, atoi(eeprom_data.scrollingSpeed), message_text);
+        
+        if(text_length == 0)
+          text_length = utf8rus(message_text).length();
+
+        //  Если текст помещается на панель, выводим статикой.
+
+        // &(apple)&
+        /*if(message_text.indexOf("&") != -1)
+        {
+            
+        }
+        backup_message_text = backup_message_text.substring(1, backup_message_text.length());
+            String command = backup_message_text.substring(1, backup_message_text.indexOf("="));
+            String value = backup_message_text.substring(backup_message_text.indexOf("=") + 1, backup_message_text.length());
+            Serial.println("Executing controll command '" + command + "' with value '" + value + "'");
+            execute_control_command(command, value);*/
+        
+        if(text_length <= 6){
+            static_text(ypos, message_text);
+        }else{
+            scroll_text(ypos, atoi(eeprom_data.scrollingSpeed), message_text);
+        }
+        
+    }else{
+        display.clearDisplay();
+        delay(20);
     }
-    
-    display.clearDisplay();
-    delay(20);
 }
