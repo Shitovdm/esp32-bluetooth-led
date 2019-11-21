@@ -66,6 +66,7 @@ uint8_t b_color = 255;
 uint16_t text_length = 0;
 int incoming;
 String message_text = "";
+String converted_message_text = "";
 String backup_message_text = "";
 String message_for_client = "";
 bool is_isset_message_for_client;
@@ -334,10 +335,7 @@ void scroll_text(uint8_t ylpos, unsigned long scroll_delay, String text)
 {
     display.setTextWrap(false);  // we don't wrap text so it scrolls nicely
     display.setRotation(0);
-
-    //char text_char_array[text_length];
-    //strcpy(text_char_array, text.c_str());
-    for (int xpos = MATRIX_WIDTH; xpos > -(MATRIX_WIDTH + text_length*7); xpos--)
+    for (int xpos = MATRIX_WIDTH; xpos > -(MATRIX_WIDTH + text_length*12); xpos--)
     {
         if(is_setting_change)
         {
@@ -347,10 +345,8 @@ void scroll_text(uint8_t ylpos, unsigned long scroll_delay, String text)
         }
         display.clearDisplay();
         display.setCursor(xpos,ylpos);
-        display.println(utf8rus(text));
-        //display.println("TEST1  ");
-        
-        //display.println("  TEST2");
+        display.println(text);
+        //display.println(utf8rus(text));
         //display.println(utf8rus(String(text_char_array[2])));
          //Serial.println("cha: r" + String(text_char_array[2]));
         
@@ -370,21 +366,17 @@ void scroll_text(uint8_t ylpos, unsigned long scroll_delay, String text)
 
         
     }
-
-    
-    
 }
 
 void static_text(uint8_t ylpos, String text)
 {
     if(is_setting_change)
-        {
-            is_setting_change = false;
-            display.clearDisplay();
-            return;
-        }
-    //zdisplay.clearDisplay();
-    display.setCursor(2,ylpos);
+    {
+        is_setting_change = false;
+        display.clearDisplay();
+        return;
+    }
+    display.setCursor(5,ylpos);
     display.println(utf8rus(text));
 }
 
@@ -426,6 +418,7 @@ bool execute_control_command(String command, String value)
     if(command.equals("set-text"))
     {
         message_text = value;
+        converted_message_text = utf8rus(message_text);
         if(!message_text.equals(eeprom_data.text))
         {
             display.clearDisplay();
@@ -710,6 +703,7 @@ void setupEeprom(bool is_enable)
     String str_font_color((char*)eeprom_data.fontColor);
     String str_font_size((char*)eeprom_data.fontSize);
     message_text = str_text;
+    converted_message_text = utf8rus(message_text);
 
     Serial.print("SDK version: "); Serial.println(ESP.getSdkVersion());
     Serial.print("Firmware compiled for flash: "); Serial.println(ESP.getFlashChipSize());
@@ -867,29 +861,16 @@ void loop()
     //  Display message.
     if (is_isset_message)
     {
-        
         if(text_length == 0)
           text_length = utf8rus(message_text).length();
 
-        //  Если текст помещается на панель, выводим статикой.
-
-        // &(apple)&
-        /*if(message_text.indexOf("&") != -1)
+        if(text_length <= 6)
         {
-            
-        }
-        backup_message_text = backup_message_text.substring(1, backup_message_text.length());
-            String command = backup_message_text.substring(1, backup_message_text.indexOf("="));
-            String value = backup_message_text.substring(backup_message_text.indexOf("=") + 1, backup_message_text.length());
-            Serial.println("Executing controll command '" + command + "' with value '" + value + "'");
-            execute_control_command(command, value);*/
-        
-        if(text_length <= 6){
-            static_text(ypos, message_text);
+            //  Если текст помещается на панель, выводим статикой.
+            static_text(ypos, converted_message_text);
         }else{
-            scroll_text(ypos, atoi(eeprom_data.scrollingSpeed), message_text);
+            scroll_text(ypos, atoi(eeprom_data.scrollingSpeed), converted_message_text);
         }
-        
     }else{
         display.clearDisplay();
         delay(20);
